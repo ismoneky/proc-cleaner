@@ -212,3 +212,80 @@ if is_protected(&live_name) { skipped.push(live_name); continue; }
 - **自动刷新间隔**：`update()` 里的 `Duration::from_secs(2)`
 - **保护名单**：`PROTECTED` 常量。**注意只写归一化后的名字**（全小写、不带 `.exe`），
   例如要加「记事本」就写 `"notepad"`，不要写 `"notepad.exe"`
+
+---
+
+## 七、云端编译（本机不装 Rust）
+
+本机**没有安装 Rust**，`cargo`/`rustc` 都不存在。工程改用 GitHub Actions 在
+`windows-latest` 上编译，本机只需要 `git`。
+
+**已经跑通并产出 exe**：
+
+- 仓库：<https://github.com/ismoneky/proc-cleaner>
+- 工作流：`.github/workflows/build.yml`
+- 永久下载直链（公开仓库，无需登录）：
+
+  ```
+  https://github.com/ismoneky/proc-cleaner/releases/latest/download/proc-cleaner.exe
+  ```
+
+工作流在每次 push 到 `main` 时自动：`cargo check` → `cargo build` → 上传 artifact
+→ 刷新 `latest` 发布。推 `v*` 形式的 tag 会额外建一个带版本号的 Release。
+
+### ⚠️ 为什么推送必须用 SSH
+
+这台机器的网络实测结果：
+
+| 端点 | 结果 |
+|---|---|
+| `github.com:443` | ❌ TCP 超时（被阻断，HTTPS 推送走这里，所以必定失败） |
+| `github.com:22` | ✅ 通（约 1 秒） |
+| `ssh.github.com:443` | ✅ 通 |
+| `api.github.com:443` | ✅ 通 |
+
+本机有 Clash 代理在 `127.0.0.1:7897`，但 git 没配置走它。因此**远程地址必须是 SSH**：
+
+```powershell
+git remote set-url origin git@github.com:ismoneky/proc-cleaner.git
+git push
+```
+
+用 HTTPS 地址会得到：
+
+```
+fatal: unable to access 'https://github.com/...': Failed to connect to github.com:443
+```
+
+如果哪天想改回 HTTPS，得先让 git 走代理：
+
+```powershell
+git config --global http.proxy http://127.0.0.1:7897
+```
+
+（或者在 Clash 里开启 TUN 模式。）
+
+### 本机打包（可选）
+
+`build.ps1` 依然可用，但要先装 Rust 工具链。本机没装，所以走云端。
+
+---
+
+## 八、构建状态（截至本次交付）
+
+| 项 | 状态 |
+|---|---|
+| `cargo check --release` | ✅ 云端通过 |
+| `cargo build --release` | ✅ 云端通过 |
+| 产物 | `proc-cleaner.exe`，4.52 MB |
+| PE 校验 | `MZ` + `PE\0\0`，machine = `0x8664`（x86_64） |
+| SHA256 | `EE64A622771854E19BD7FFFDBC9AC2CCD6CD0CDF02B157833683922FF943660A` |
+| 界面实际显示 | ⚠️ **未由我验证**（非交互会话里 GUI 启动测试不稳定，请自行双击确认） |
+| 结束进程的实际效果 | ⚠️ **未验证** |
+
+原先 README 第四节列的「未验证清单」现在可以更新：编译、`windows::core::BOOL`
+路径、以及 `egui 0.31` + `sysinfo 0.33` 的 API 组合，**都已由云端构建证实**。
+
+剩下真正没验证的只有两条：**界面长什么样**，和**杀进程是否真的生效**（后者需要
+管理员权限，且会真的结束进程，不适合自动测试）。
+
