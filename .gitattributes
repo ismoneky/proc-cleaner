@@ -1,0 +1,6 @@
+# 仓库里的文本文件一律用 LF 存储和检出。
+#
+# 为什么在意这个：build.ps1 是给 Windows PowerShell 5.1 用的，而 5.1 在没有
+# UTF-8 BOM 时按 ANSI(GBK) 读 .ps1。这个脚本特意写成纯 ASCII 所以两种编码都
+# 安全，但把换行固定下来能避免 checkout 行为在不同机器上漂移。
+* text=auto eol=lf

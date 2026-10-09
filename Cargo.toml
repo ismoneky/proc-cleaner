@@ -1,0 +1,32 @@
+[package]
+name = "proc-cleaner"
+version = "0.1.0"
+edition = "2021"
+description = "Windows GUI process cleaner (egui + sysinfo)"
+
+[dependencies]
+# GUI
+eframe = "0.31"
+egui = "0.31"
+
+# 进程枚举 / 结束
+sysinfo = "0.33"
+
+# 枚举顶层窗口，用来区分「有窗口」和「后台」进程。
+#
+# 【重要】这里不能改成较老的版本：
+# windows crate 从 0.60 起把 BOOL 从 Win32::Foundation 移到了 windows::core，
+# 因此本文件里写的是 `use windows::core::BOOL`，必须搭配 >= 0.60 的 windows crate。
+# 如果降级到 0.58/0.59，请把 main.rs 里的 BOOL 导入改回
+#     use windows::Win32::Foundation::{BOOL, HWND, LPARAM};
+# 并把回调结尾的 `BOOL(1)` 改成 `TRUE`。
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

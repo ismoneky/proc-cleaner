@@ -1,0 +1,8 @@
+# Rust 构建产物
+/target/
+
+# 打包输出（由 build.ps1 生成）
+/dist/
+
+# 崩溃日志（由程序 panic hook 写到 exe 同目录）
+proc-cleaner-crash.log
